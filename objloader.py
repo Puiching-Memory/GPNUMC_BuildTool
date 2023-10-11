@@ -1,5 +1,9 @@
 '''
     Load and pack *.obj files
+    加载和打包.obj文件
+    ---
+    source:https://github.com/szabolcsdombi/objloader
+    @szabolcsdombi
 '''
 
 import logging
