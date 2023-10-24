@@ -18,6 +18,12 @@ output.py:生成和导出.schem文件
 * mcschematic
 * numpy
 
+# OBJ-3D软件导出
+
+## 1.blender
+
+导出OBJ,坐标轴选择Y/Z
+
 # 文档
 
 * [schem文件格式[中文wiki]](https://minecraft.fandom.com/zh/wiki/Schematic%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F "https://minecraft.fandom.com/zh/wiki/Schematic%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F")
