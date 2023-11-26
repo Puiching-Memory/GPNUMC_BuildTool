@@ -23,6 +23,6 @@ Object = objloadN.OBJN(infile_name)
 data = Object.Exp_V()
 
 print("正在导出文件：", outfile_name + ".schem")
-out = output.SchemN(data)
+out = output.SchemN(data[0],data[1],data[2])
 out.Exp_sch(outfile_name)
 
