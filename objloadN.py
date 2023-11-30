@@ -2,8 +2,14 @@
 Load and pack *.obj files
 加载和打包.obj文件数据
 ---
+#不支持:
+四点面
+O(分组)
+S
+*.mtl
+
 IDLE:VS CODE
-Python Version:3.11.5
+Python Version:3.11.5/3.10.11/
 @PuiChing Memory
 """
 
@@ -18,31 +24,25 @@ class OBJN:
 	从文件加载:__init__ or open() \n
 	导出数据:Exp_V()
 	'''
-	def __init__(self, path: str) -> "OBJN":
-		self.path = path
-		with rich.progress.open(path,encoding='utf-8') as file:
-			self._temp_data = file.readlines()
-
-		self._Analyze()
-	
-	def Open(self, path):
-		pass
-
-	def _Analyze(self):
-
-		
+	def __init__(self, *path: str) -> "OBJN":
 		self._enc_data = []
 
-		# 过滤无关字符
-		for i in self._temp_data:
-			if i[0]== '#':
-				continue 
-			if i == '\n':
-				continue
+		if path != ():
+			self.Open(path[0])
+	
+	def Open(self, path:str):
+		self.path = path
+		self._enc_data = []
+		with rich.progress.open(path,encoding='utf-8') as file:
+			# 过滤无关字符
+			for i in file.readlines():
+				if i[0]== '#':
+					continue 
+				if i == '\n':
+					continue
 
-			self._enc_data.append(i)
+				self._enc_data.append(i)
 
-		##print(self._enc_data)
 
 	def Exp_V(self) -> list:
 		'''
@@ -52,10 +52,13 @@ class OBJN:
 		list[1] = vn_list #法向量列表\n
 		list[2] = f_list #面列表
 		'''
-		#_exp_data = []
+		if self._enc_data == []:
+			raise IndexError('导出错误:数据未载入,先调用Open(path)')
+
 		_exp_v = []
 		_exp_vn = []
 		_exp_f = []
+		_exp_vt = []
 
 		for i in track(self._enc_data,description='分析点v数据'):
 			# 使用正则表达式提取以"v"开头的行  
@@ -95,10 +98,7 @@ class OBJN:
 
 
 if __name__ == "__main__":
-	#Object = OBJN("./3dobj/lite/lite.obj")
-	#result = Object.Exp_V()
-	#print(result[2])
-
-	Object = OBJN("out.obj")
+	Object = OBJN()
+	#Object.Open('3.obj')
 	result = Object.Exp_V()
 	#print(result[2])
