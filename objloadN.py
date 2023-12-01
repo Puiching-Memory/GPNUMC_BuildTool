@@ -4,12 +4,8 @@ Load and pack *.obj files
 ---
 #不支持:
 四点面
-O对象名称
-g组
-S平滑
-PBR扩展
-NURBS曲线
-动画
+O(分组)
+S
 
 IDLE:VS CODE
 Python Version:3.11.5/3.10.11/
@@ -41,7 +37,7 @@ class mtlN:
 	def open(self, path):
 		self.path = path
 		print("load mtl file from:", path)
-		with open(path,encoding='utf-8') as data:
+		with open(path) as data:
 			# 过滤无关字符
 			for i in data.readlines():
 				i.replace("\n", "")
@@ -50,7 +46,7 @@ class mtlN:
 				if i == "\n":
 					continue
 				self._enc_data.append(i.replace("\n", ""))
-		# print(self._enc_data)
+		#print(self._enc_data)
 
 		self._analyze()
 
@@ -69,11 +65,11 @@ class mtlN:
 			if str(i).startswith("Ni"):
 				self.child[current].set_ni(float(i[3:]))
 				continue
-
+				
 			if str(i).startswith("d"):
 				self.child[current].set_d(float(i[2:]))
 				continue
-
+			
 			if str(i).startswith("illum"):
 				self.child[current].set_illum(int(i[6:]))
 				continue
@@ -95,18 +91,19 @@ class mtlN:
 				temp_ke = [float(x) for x in temp]
 				self.child[current].set_ke(temp_ke)
 				continue
-
+				
 			if str(i).startswith("Kd"):
 				temp = i[3:].split(" ")
 				temp_ke = [float(x) for x in temp]
 				self.child[current].set_kd(temp_ke)
 				continue
-
-			if str(i).startswith("map_Kd"):
-				self.child[current].set_map_kd(str(self.path[:-7]) + "/" + i[7:])
+			
+			if str(i).startswith('map_Kd'):
+				self.child[current].set_map_kd(str(self.path[:-7]) + '/' + i[7:])
 				continue
 
-		print(self.child[1].get())
+
+		print(self.child[0].get())
 
 
 class mtlC:
@@ -117,18 +114,18 @@ class mtlC:
 
 	def __init__(self, id) -> None:
 		self.id = id
-		self.ka = []  # 环境光
-		self.kd = []  # 漫反射光
-		self.ks = []  # 高光
-		self.ke = []  # 发射光
-		self.d = 1.0  # 透明度
-		self.ns = 0.0  # 高光
-		self.ni = 0.0  # 光学密度
-		self.illum = 2  # Phong光照模型
-		self.map_Kd = ""  # 贴图路径
-		self.map_x = 1  # 贴图宽度
-		self.map_y = 1  # 贴图高度
-		self.map_obj = object  # 贴图对象(PIL.Image.Image)
+		self.ka = []
+		self.kd = []
+		self.ks = []
+		self.ke = []
+		self.d = 0.0
+		self.ns = 0.0
+		self.ni = 0.0
+		self.illum = 0
+		self.map_Kd = ""
+		self.map_x = 0
+		self.map_y = 0
+		self.map_obj = object
 
 	def set_ns(self, ns: float):
 		# print(ns)
@@ -145,7 +142,7 @@ class mtlC:
 	def set_ke(self, ke: list):
 		# print(ke)
 		self.ke = ke
-
+		
 	def set_kd(self, kd: list):
 		# print(ke)
 		self.kd = kd
@@ -169,9 +166,6 @@ class mtlC:
 	def get_id(self) -> str:
 		return self.id
 
-	def get_map_size(self) -> tuple:
-		return (self.map_x, self.map_y)
-
 	def get_map_Kd(self) -> str:
 		return self.map_Kd
 
@@ -193,7 +187,7 @@ class mtlC:
 		]
 
 	def get_colour(self, x, y) -> list:
-		return self.map_obj.getpixel((x, y))
+		pass
 
 
 class OBJN:
@@ -238,7 +232,7 @@ class OBJN:
 
 		_exp_v = []
 		_exp_vn = []
-		_exp_f = [[]]
+		_exp_f = []
 		_exp_vt = []
 		_exp_mtllib = mtlN()
 
@@ -268,28 +262,20 @@ class OBJN:
 				x, y = match
 				_exp_vt.append([float(x), float(y)])
 
-		mtl_group = 0 #当前f属于的材质组
 		for i in track(self._enc_data, description="分析面f数据"):
 			# 使用正则表达式提取以"f"开头的行
+			# matches = re.findall( r"f (\d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+)" , i, re.MULTILINE)
+			matches = re.findall(
+				r"f (\d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+)", i, re.MULTILINE
+			)
 			# 将找到的匹配项保存到列表中
-			if str(i).startswith('f'):
-				for i2 in str(i[2:]).replace('\n','').split(' '):
-					_exp_f[mtl_group].append(list(map(int, i2.split('/'))) )
-				continue
 
-			if str(i).startswith('usemtl'):
-				_exp_f.append([])
-				mtl_group = mtl_group + 1
-				continue
-
-			'''
 			for match in matches:
 				int_list = [
 					[int(i) for i in match.split(" ")[i].split("/")]
 					for i in range(len(match.split(" ")))
 				]
 				_exp_f.append(int_list)
-			'''
 
 		for i in track(self._enc_data, description="解析mtl"):
 			if i.startswith("mtllib") == True:
@@ -304,6 +290,6 @@ class OBJN:
 if __name__ == "__main__":
 	Object = OBJN()
 	Object.Open("3dobj/tex/tex.obj")
-	# Object.Open("2E.obj")
+	#Object.Open("2E.obj")
 	result = Object.Exp_V()
-	print(result[3])
+	#print(result)
