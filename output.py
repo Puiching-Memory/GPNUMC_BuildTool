@@ -46,8 +46,8 @@ class SchemN:
                 self.f_vn[i].append(i2[2])
 
         #print(self.f)
-        self.mp_center(self._GenerateFace)
-        #self._GenerateFace()  # 计算
+
+        self._GenerateFace()  # 计算
 
     def mp_center(self,fun,**kargs):
         '''

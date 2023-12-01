@@ -5,13 +5,16 @@ GPNU[广东技术师范大学]MineCraft 建筑工具
 # 功能
 
 * [X] .OBJ文件自动转换为.schem文件，这可以被创世神(EditWorld mod)载入
+* [X] 网格细分/填充空洞
 * [ ] 方块匹配颜色
 * [ ] 表面平滑
-* [X] 提供更多3D文件格式支持
+* [ ] 提供更多3D文件格式支持
+* [ ] 
 
-# 2.0更改注意事项
+# 2.0发布
 
 * 正在向open3D迁移,各类api会经常更改
+* 
 
 # 结构
 
@@ -27,13 +30,18 @@ output.py:生成和导出.schem文件
 * mcschematic
 * numpy
 * rich
-* open3d
+* PIL
+* ~~open3d~~
 
 # OBJ-3D软件导出注意事项
 
 ### For Blender:
 
 导出OBJ,坐标轴选择Y/Z
+
+勾选：三角化网格/颜色
+
+路径模式选择：复制
 
 # 文档
 
