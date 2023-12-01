@@ -103,7 +103,12 @@ class mtlN:
 				continue
 
 
-		print(self.child[0].get())
+		#print(self.child[0].get())
+
+	def get_pixel(self,img_index:int,x_scale:float,y_scale:float):
+		#print(img_index)
+		data = self.child[img_index].get_colour(self.child[img_index].get_map_size()[0] * x_scale,self.child[img_index].get_map_size()[1] * y_scale)
+		return data
 
 
 class mtlC:
@@ -185,9 +190,12 @@ class mtlC:
 			self.map_y,
 			self.map_obj,
 		]
-
+	def get_map_size(self):
+		return (self.map_x,self.map_y)
+	
 	def get_colour(self, x, y) -> list:
-		pass
+		#print('x',x,'y',y)
+		return self.map_obj.getpixel((round(x,0)-1,round(y,0)-1))
 
 
 class OBJN:
@@ -225,7 +233,8 @@ class OBJN:
 		list[1] = vn_list #法向量列表\n
 		list[2] = vt_list #uv列表\n
 		list[3] = f_list #面列表\n
-		list[4] = mtllib #mtl文件对象
+		list[4] = mtllib #mtl文件对象\n
+		list[5] = strc #f分组结构
 		"""
 		if self._enc_data == []:
 			raise IndexError("导出错误:数据未载入,先调用Open(path)")
@@ -235,6 +244,7 @@ class OBJN:
 		_exp_f = []
 		_exp_vt = []
 		_exp_mtllib = mtlN()
+		_exp_strc = []
 
 		for i in track(self._enc_data, description="分析点v数据"):
 			# 使用正则表达式提取以"v"开头的行
@@ -284,7 +294,20 @@ class OBJN:
 				except Exception as error:
 					print(error)
 
-		return [_exp_v, _exp_vn, _exp_vt, _exp_f, _exp_mtllib]
+		strc_count = 0
+		#_exp_strc.append('D')
+		for i in track(self._enc_data, description="分析usemtl结构"):
+			if str(i).startswith('f'):
+				strc_count = strc_count + 1
+				continue
+			
+			if str(i).startswith('usemtl'):
+				_exp_strc.append(strc_count)
+				#_exp_strc.append('M')
+				strc_count = 0
+		_exp_strc.append(strc_count)
+
+		return [_exp_v, _exp_vn, _exp_vt, _exp_f, _exp_mtllib,_exp_strc]
 
 
 if __name__ == "__main__":
@@ -292,4 +315,4 @@ if __name__ == "__main__":
 	Object.Open("3dobj/tex/tex.obj")
 	#Object.Open("2E.obj")
 	result = Object.Exp_V()
-	#print(result)
+	print(result[5])

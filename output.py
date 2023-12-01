@@ -15,12 +15,33 @@ import multiprocessing as mp
 #import math
 from rich.progress import track
 
+mc_block = {
+    "minecraft:white_concrete": (205, 210, 211),
+    "minecraft:light_gray_concrete": (124, 124, 114),
+    "minecraft:gray_concrete": (53, 56, 60),
+    "minecraft:black_concrete": (8, 10, 15),
+    "minecraft:brown_concrete": (96, 59, 32),
+    "minecraft:red_concrete": (141, 33, 33),
+    "minecraft:orange_concrete": (222, 96, 0),
+    "minecraft:yellow_concrete": (238, 173, 21),
+    "minecraft:lime_concrete": (94, 168, 25),
+    "minecraft:green_concrete": (72, 90, 36),
+    "minecraft:cyan_concrete": (21, 117, 133),
+    "minecraft:light_blue_concrete": (35, 134, 195),
+    "minecraft:blue_concrete": (44, 46, 142),
+    "minecraft:purple_concrete": (99, 31, 154),
+    "minecraft:magenta_concrete": (165, 46, 155),
+    "minecraft:pink_concrete": (210, 99, 140),
+}
 
 class SchemN:
-    def __init__(self, v: list, vn: list, f: list) -> None:
+    def __init__(self, v: list, vn: list,vt:list, f: list,mtllib:object,strc) -> None:
         self.v = v  # 顶点列表
         self.f = f  # 面列表
         self.vn = vn  # 法向量列表
+        self.vt = vt # uv坐标列表
+        self.mtllib = mtllib #mtl对象
+        self.strc = strc #f对应mtl分组结构
         self.f_v = []  # 面对应的点索引列表
         self.f_uv = []  # 面对应的uv纹理坐标索引列表
         self.f_vn = []  # 面对应的法向量索引列表
@@ -189,6 +210,55 @@ class SchemN:
         schem = mcschematic.MCSchematic()
         for i in track(self.points,description='生成schem文件'):
             schem.setBlock((round(i[1]), round(i[2]), round(i[0])), "minecraft:stone")
+        
+
+        print('着色中')
+        current = 0
+        padding = 0
+        img_index = 0
+        #print(self.strc)
+        for i,i2 in zip(self.f_uv,self.f_v):
+            #print(i,i2)
+            current = current + 1
+            #print(i)
+            for i999 in self.strc:
+                padding = padding + i999
+                if current <= padding:
+                    break
+                img_index = img_index + 1
+
+            #print(current,padding,img_index)           
+            
+            for i12,i22 in zip(i,i2):
+                #print(i2,i22)
+                #print(self.vt[i2-1])
+                try:
+                    re = self.mtllib.get_pixel(img_index-1,self.vt[i12-1][0],self.vt[i12-1][1])
+                except Exception as error:
+                    #print(error,'skip')
+                    break
+                be = self.v[i22-1]
+                #print(re,be)
+
+
+
+                rsumm = 999
+                tar_block = ""
+                for i in mc_block.keys():
+                    # mc_block[i]
+                    summ = 0
+                    for c1, c2 in zip(re, mc_block[i]):
+                        summ = summ + abs(c1 - c2)
+
+                    if summ < rsumm:
+                        rsumm = summ
+                        tar_block = i
+
+                ##print(tar_block)
+
+                #schem.setBlock((x, 0, y), tar_block)
+
+                schem.setBlock((round(be[1]), round(be[2]), round(be[0])), tar_block)
 
         print('保存schem文件')
         schem.save("./", filename, mcschematic.Version.JE_1_20_1)

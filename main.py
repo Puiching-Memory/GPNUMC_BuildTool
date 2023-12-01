@@ -23,6 +23,6 @@ data = Object.Exp_V()
 del Object
 
 print("正在导出文件：", outfile_name + ".schem")
-out = output.SchemN(data[0],data[1],data[2])
+out = output.SchemN(*data)
 out.Exp_sch(outfile_name)
 
