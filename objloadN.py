@@ -16,6 +16,7 @@ import re
 from rich.progress import track
 import rich.progress
 import os
+import math
 
 # import PIL.Image
 from PIL import Image
@@ -99,7 +100,7 @@ class mtlN:
 				continue
 			
 			if str(i).startswith('map_Kd'):
-				self.child[current].set_map_kd(str(self.path[:-7]) + '/' + i[7:])
+				self.child[current].set_map_kd(os.path.dirname(self.path) + '/' + i[7:])
 				continue
 
 
@@ -107,6 +108,9 @@ class mtlN:
 
 	def get_pixel(self,img_index:int,x_scale:float,y_scale:float):
 		#print(img_index)
+		x_scale = math.modf(x_scale)[0]
+		y_scale = math.modf(y_scale)[0]
+
 		data = self.child[img_index].get_colour(self.child[img_index].get_map_size()[0] * x_scale,self.child[img_index].get_map_size()[1] * y_scale)
 		return data
 
