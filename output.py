@@ -11,8 +11,10 @@ import mcschematic
 import numpy as np
 #import itertools
 import multiprocessing as mp
+from concurrent import futures
 #import open3d
 #import math
+import time
 from rich.progress import track
 
 mc_block = {
@@ -77,11 +79,10 @@ class SchemN:
         self.f_v = []  # 面对应的点索引列表
         self.f_uv = []  # 面对应的uv纹理坐标索引列表
         self.f_vn = []  # 面对应的法向量索引列表
-        self.block = []  # 方块坐标列表[X,Y,Z]
         self.points = [] # 点云坐标列表
         
-        self.maxinsert = 1 #动态点插值阈值,大于则忽略
-        self.inserttimes = 2 #点插值阶数
+
+        #mp.Manager().list()
 
         for i in range(0,len(self.f)):
             self.f_v.append([])
@@ -100,24 +101,19 @@ class SchemN:
 
         #print(self.f)
 
-        self._GenerateFace()  # 计算
+        #self.GenerateFace()  # 计算
 
-    def mp_center(self,fun,**kargs):
-        '''
-        多进程管理器
-        ---
-        '''
-        pool = mp.Pool(mp.cpu_count)
-        pool.apply_async(fun, args=kargs)
-        pool.close()
-        pool.join()
 
-    def _GenerateFace(self):
-        for i in track(range(0,len(self.f)-1),description='分析面'):
+
+
+    def GenerateFace(self):
+        task_face = []
+        for i in track(range(0,len(self.f)-1),description='生成任务列表'):
             VN = self.vn[self.f_vn[i][0]-1]
             A = self.v[self.f_v[i][0]-1]
             B = self.v[self.f_v[i][1]-1]
             C = self.v[self.f_v[i][2]-1]
+            task_face.append([A,B,C])
 
             #self.points.extend([A,B,C])
 
@@ -141,13 +137,19 @@ class SchemN:
             '''
             #print('check face',i)
             #self.mp_center()
-            self.point_liner_inset(A,B,C)
+
+            #TODO:多进程内存共享
+            #self.mp_center(self.point_liner_inset,(A,B,C))
+            #self.point_liner_inset(A,B,C)
 
         #self.points = np.unique(self.points)
         #print(self.points)
-        print('block:',len(self.block))
-        print('point:',len(self.points))
+        #print(task_face)
+        print('task_point:',len(task_face))
         print('frame:',len(self.f))
+        self.points = mp_center(point_liner_inset,task_face)
+        print('generate_point:',len(self.points))
+        #self.point_liner_inset(A,B,C)
 
 
     def volin(self):
@@ -157,60 +159,7 @@ class SchemN:
         """
         pass
 
-    def point_liner_inset(self,PointA,PointB,PointC):
-        """
-        线性点插值
-        ---
-        """
-        
-        points = []
-        points.append(PointA)
-        points.append(PointB)
-        points.append(PointC)
-
-        for t in range(0,self.inserttimes):
-            temp = []
-            for A in points:
-                for B in points:
-                    if A==B:
-                        continue
-                    scale = 1 #细分系数
-
-                    #构建点向量
-                    dotA = np.array([A[0],A[1],A[2]])
-                    dotB = np.array([B[0],B[1],B[2]])
-
-                    #构建两点之间的向量
-                    arrAB = np.subtract(dotA,dotB)
-
-                    #计算两点之间的向量的模
-                    disAB = np.linalg.norm(arrAB)
-                    
-                    #扩增细分系数
-                    while np.linalg.norm(arrAB/scale) > self.maxinsert:
-                        scale = scale + 1
-                    
-                    if scale == 1:
-                        continue
-                    #print('scale',scale)
-                    for i in range(1,scale):
-                        #print((dotA-arrAB/scale*i).tolist())
-                        temp.append((dotA-arrAB/scale*i).tolist())
-            #print('插值+',len(temp))
-            points.extend(temp)
-                        #points.append((dotA-arrAB/2).tolist())
-                    #print('A',dotA,'B',dotB,'C',dotC)
-                    #print('A-B',disAB,'A-C',disAC,"B-C",disBC)
-                    #print('2/AB',dotA-arrAB/2)
-        #删除重复元素
-        re = []
-        for x in points:
-            if x in re:
-                #print('skip')
-                continue
-            else:
-                re.append(x)
-        self.points.extend(re)
+    
 
     def is_on_plane_grid(self):
         """
@@ -244,12 +193,12 @@ class SchemN:
             schem.setBlock((round(i[1]), round(i[2]), round(i[0])), "minecraft:stone")
         
 
-        print('着色中')
+        #print('着色中')
         current = 0
         padding = 0
         img_index = 0
         #print(self.strc)
-        for i,i2 in zip(self.f_uv,self.f_v):
+        for i,i2 in track(zip(self.f_uv,self.f_v),description='着色中'):
             #print(i,i2)
             current = current + 1
             #print(i)
@@ -294,3 +243,90 @@ class SchemN:
 
         print('保存schem文件')
         schem.save("./", filename, mcschematic.Version.JE_1_20_1)
+
+def point_liner_inset(*kargs):
+        """
+        线性点插值
+        ---
+        """
+        maxinsert = 1 #动态点插值阈值,大于则忽略
+        inserttimes = 2 #点插值阶数
+        #print('Point:',kargs)
+        PointA = kargs[0][0]
+        PointB = kargs[0][1]
+        PointC = kargs[0][2]
+        points = []
+        points.append(PointA)
+        points.append(PointB)
+        points.append(PointC)
+
+        for t in range(0,inserttimes):
+            temp = []
+            for A in points:
+                for B in points:
+                    if A==B:
+                        continue
+                    scale = 1 #细分系数
+
+                    #构建点向量
+                    dotA = np.array([A[0],A[1],A[2]])
+                    dotB = np.array([B[0],B[1],B[2]])
+
+                    #构建两点之间的向量
+                    arrAB = np.subtract(dotA,dotB)
+
+                    #计算两点之间的向量的模
+                    disAB = np.linalg.norm(arrAB)
+                    
+                    #扩增细分系数
+                    while np.linalg.norm(arrAB/scale) > maxinsert:
+                        scale = scale + 1
+                    
+                    if scale == 1:
+                        continue
+                    #print('scale',scale)
+                    for i in range(1,scale):
+                        #print((dotA-arrAB/scale*i).tolist())
+                        temp.append((dotA-arrAB/scale*i).tolist())
+            #print('插值+',len(temp))
+            points.extend(temp)
+                        #points.append((dotA-arrAB/2).tolist())
+                    #print('A',dotA,'B',dotB,'C',dotC)
+                    #print('A-B',disAB,'A-C',disAC,"B-C",disBC)
+                    #print('2/AB',dotA-arrAB/2)
+        #删除重复元素
+        re = []
+        for x in points:
+            if x in re:
+                #print('skip')
+                continue
+            else:
+                re.append(x)
+        #self.points.extend(re)
+        return re
+
+def mp_center(fun,*kargs):
+    '''
+    多进程管理器
+    ---
+    fun:function()\n
+    *kargs:待处理数据,不要当作形式参数!
+    '''
+    
+    result = []
+    NUMBER_OF_PROCESSES = mp.cpu_count()
+    #NUMBER_OF_PROCESSES = 3
+    CHUNKSIZE = max(1,int(len(*kargs)/NUMBER_OF_PROCESSES))
+    print('Using Core:',NUMBER_OF_PROCESSES,"Chunksize:",CHUNKSIZE)
+    
+    #print('*kargs:',*kargs)
+    t1 = time.time()
+    with futures.ProcessPoolExecutor(NUMBER_OF_PROCESSES) as executor:
+        res = executor.map(fun,*kargs,chunksize=CHUNKSIZE)
+    #print("----print result----")
+    print('used time:',time.time()-t1)
+    for r in res:
+        #print(r)
+        result.extend(r)
+
+    return result

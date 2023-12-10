@@ -4,8 +4,12 @@ Load and pack *.obj files
 ---
 #不支持:
 四点面
-O(分组)
-S
+O对象名称
+g组
+S平滑
+PBR扩展
+NURBS曲线
+动画
 
 IDLE:VS CODE
 Python Version:3.11.5/3.10.11/
@@ -38,7 +42,7 @@ class mtlN:
 	def open(self, path):
 		self.path = path
 		print("load mtl file from:", path)
-		with open(path) as data:
+		with open(path,encoding='utf-8') as data:
 			# 过滤无关字符
 			for i in data.readlines():
 				i.replace("\n", "")
@@ -123,18 +127,18 @@ class mtlC:
 
 	def __init__(self, id) -> None:
 		self.id = id
-		self.ka = []
-		self.kd = []
-		self.ks = []
-		self.ke = []
-		self.d = 0.0
-		self.ns = 0.0
-		self.ni = 0.0
-		self.illum = 0
-		self.map_Kd = ""
-		self.map_x = 0
-		self.map_y = 0
-		self.map_obj = object
+		self.ka = []  # 环境光
+		self.kd = []  # 漫反射光
+		self.ks = []  # 高光
+		self.ke = []  # 发射光
+		self.d = 1.0  # 透明度
+		self.ns = 0.0  # 高光
+		self.ni = 0.0  # 光学密度
+		self.illum = 2  # Phong光照模型
+		self.map_Kd = ""  # 贴图路径
+		self.map_x = 1  # 贴图宽度
+		self.map_y = 1  # 贴图高度
+		self.map_obj = object  # 贴图对象(PIL.Image.Image)
 
 	def set_ns(self, ns: float):
 		# print(ns)
@@ -250,46 +254,45 @@ class OBJN:
 		_exp_mtllib = mtlN()
 		_exp_strc = []
 
-		for i in track(self._enc_data, description="分析点v数据"):
-			# 使用正则表达式提取以"v"开头的行
-			vertices = re.findall(r"v\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)", i)
+		for i in track(self._enc_data, description="分析OBJ行数据"):
 
-			# 遍历提取到的顶点数据
-			for vertex in vertices:
-				x, y, z = vertex  # 将每行的数据分为三份
+			if i.startswith('v '):
+				vertices = i[2:-1].split(' ')
+				x = vertices[0]
+				y = vertices[1]
+				z = vertices[2]
 				_exp_v.append([float(x), float(y), float(z)])
+				continue
 
-		for i in track(self._enc_data, description="分析法向量vn数据"):
-			# 使用正则表达式提取以"vn"开头的行
-			vertices = re.findall(r"vn\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)", i)
-
-			# 遍历提取到的顶点数据
-			for vertex in vertices:
-				x, y, z = vertex  # 将每行的数据分为三份
+			if i.startswith('vn'):
+				vertices = i[3:-1].split(' ')
+				x = vertices[0]
+				y = vertices[1]
+				z = vertices[2]
 				_exp_vn.append([float(x), float(y), float(z)])
+				continue
 
-		# print(_exp_vn)
-		for i in track(self._enc_data, description="分析(uv)vt数据"):
-			# 使用正则表达式提取 vt 行，并将它们转换为 [x, y] 的列表形式
-			matches = re.findall(r"vt (\d+\.\d+)\s(\d+\.\d+)", i)
-			for match in matches:
-				x, y = match
+			if i.startswith('vt'):
+				vertices = i[3:-1].split(' ')
+				x = vertices[0]
+				y = vertices[1]
 				_exp_vt.append([float(x), float(y)])
+				continue
 
-		for i in track(self._enc_data, description="分析面f数据"):
-			# 使用正则表达式提取以"f"开头的行
-			# matches = re.findall( r"f (\d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+)" , i, re.MULTILINE)
-			matches = re.findall(
-				r"f (\d+/\d+/\d+ \d+/\d+/\d+ \d+/\d+/\d+)", i, re.MULTILINE
-			)
-			# 将找到的匹配项保存到列表中
-
-			for match in matches:
-				int_list = [
-					[int(i) for i in match.split(" ")[i].split("/")]
-					for i in range(len(match.split(" ")))
-				]
-				_exp_f.append(int_list)
+			if i.startswith('f'):
+				vertices = i[2:-1].split(' ')
+				#print(vertices)
+				tmp_list = []
+				for i2 in vertices:
+					tmp = i2.split('/')
+					a = int(tmp[0])
+					b = int(tmp[1])
+					c = int(tmp[2])
+					tmp_list.append([a,b,c])
+				
+				#print(tmp_list)
+				_exp_f.append(tmp_list)
+				continue
 
 		for i in track(self._enc_data, description="解析mtl"):
 			if i.startswith("mtllib") == True:

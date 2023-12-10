@@ -5,7 +5,7 @@ import mcschematic
 from rich.progress import track
   
 # 指定OB文件路径  
-file_path = '3.obj'
+file_path = '3dobj/tree.obj'
   
 # 使用Open3D读取OBJ文件  
 mesh = o3d.io.read_triangle_mesh(file_path,True)

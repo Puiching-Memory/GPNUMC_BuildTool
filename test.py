@@ -1,17 +1,29 @@
-import re  
-  
-# 输入的文本  
-text = """  
-vt 0.625000 0.000000  
-vt 0.375000 0.250000  
-vt 0.375000 0.000000  
-vt 0.625000 0.250000  
-"""  
-  
-# 使用正则表达式提取 vt 行，并将它们转换为 [x, y] 的列表形式  
-pattern = r'vt (\d+\.\d+)\s(\d+\.\d+)'  
-matches = re.findall(pattern, text)  
-  
-# 打印结果  
-for match in matches:  
-    print(match)  # 输出：[x, y] 的列表，例如：[0.625, 0.0], [0.375, 0.25], [0.375, 0.0], [0.625, 0.25]
+import multiprocessing
+
+
+def mp_center(fun,*kargs):
+    '''
+    多进程管理器
+    ---
+    '''
+    #print(fun,kargs)
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool.apply_async(fun, args=kargs)
+    pool.close()
+    pool.join()
+
+
+
+
+
+def coun(c):
+    for i in c:
+        print(i)
+        ra.remove(i)
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    ra = multiprocessing.Manager().list()
+    ra.extend([i for i in range(100)])
+    #print(ra)
+    mp_center(coun,[2,2,3,4])
